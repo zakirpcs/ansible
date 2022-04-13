@@ -2,10 +2,10 @@ Host file Example:
 
 vim /etc/ansible/hosts
 [cisco]
-SW-10.10.11.148 ansible_host=10.10.11.148 ansible_network_os=ios ansible_ssh_user=admin  ansible_ssh_pass="admin" 
-SW-10.10.11.148 ansible_host=10.10.11.148 ansible_network_os=ios
+SW-10.10.10.2 ansible_host=10.10.10.2 ansible_network_os=ios ansible_ssh_user=admin  ansible_ssh_pass="admin" 
+SW-10.10.10.2 ansible_host=10.10.10.3 ansible_network_os=ios
 
-
+Playbook file to backup cisco switch.
 ---
 - hosts: all
   gather_facts: true
