@@ -1,0 +1,29 @@
+Host file Example:
+
+vim /etc/ansible/hosts
+[cisco]
+SW-10.10.11.148 ansible_host=10.10.11.148 ansible_network_os=ios ansible_ssh_user=admin  ansible_ssh_pass="admin" 
+SW-10.10.11.148 ansible_host=10.10.11.148 ansible_network_os=ios
+
+
+---
+- hosts: all
+  gather_facts: true
+  connection: network_cli
+  become: yes
+
+  tasks:
+  - name: Show Running Configuration
+    ios_command:
+      host: "{{ cisco }}"
+      commands:
+        - show run
+    register: config
+
+  - name: Save output to /etc/ansible/backups
+    copy:
+     content: "{{ config.stdout[0] }}"
+     dest: "/etc/ansible/show_run_config_{{ inventory_hostname }}.txt"
+
+Run The Playbook
+# ansible-playbook -l cisco playbooks/cisco.yaml -k -u admin
