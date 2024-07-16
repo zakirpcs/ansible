@@ -1,0 +1,96 @@
+---
+ - hosts: all
+   become: yes
+   become_user: root
+   become_method: sudo
+   remote_user: sys-admin
+
+   vars:
+    nagios_password: '$6$YOURSALT$KhOOMd6qdsNG1slbiu0XubKj/KUwWCKWxnI4c2ma.f5h.OniBHDXZgj/r/43zZsg6B7dDImLf8sxUDcnKsYOP.'
+
+   tasks:
+
+   - name: Add NAGIOS Monitoring user
+     action: user name=nagios password="{{nagios_password}}"
+
+   - name: Copy nagios-plugins file to target server
+     copy: src=/data/files/nagios/nagios-plugins-2.3.3.tar.gz dest=/home/sys-admin/ force=no
+
+   - name: extract nagios-plugins file to target server       
+     unarchive:
+      src: /home/sys-admin/nagios-plugins-2.3.3.tar.gz
+      dest: /home/sys-admin/
+      remote_src: yes  
+
+   - name: Copy & extract nrpe-4.1.0 file to target server
+     copy: src=/data/files/nagios/nrpe-4.1.0.tar.gz dest=/home/sys-admin/ force=no
+
+   - name: extract nagios-plugins file to target server       
+     unarchive:
+      src: /home/sys-admin/nrpe-4.1.0.tar.gz
+      dest: /home/sys-admin/
+      remote_src: yes
+   
+   - name: Install required packages for Nagios
+     yum:
+      name:
+       - openssl
+       - openssl-devel
+       - xinetd
+       - gcc  
+       - make
+      state: present   
+
+   - name: Permission change of configure file of /home/sys-admin/nagios-plugins-2.3.3
+     command: chmod +x /home/sys-admin/nagios-plugins-2.3.3/configure
+
+   - name: nagios-plugins install
+     shell: "{{ item }}"
+     args:
+       chdir: /home/sys-admin/nagios-plugins-2.3.3
+     with_items:
+      - ./configure 
+      - make
+      - make install
+
+   - command: chown nagios.nagios /usr/local/nagios
+   - command: chown -R nagios.nagios /usr/local/nagios/libexec
+   
+   - name: Permission chnage  of /home/sys-admin/nrpe-4.1.0/configure file
+     command: chmod +x /home/sys-admin/nrpe-4.1.0/configure
+
+   - name: nagios NRPE Plugin install
+     shell: "{{ item }}"
+     args:
+       chdir: /home/sys-admin/nrpe-4.1.0
+     with_items:
+      - ./configure --enable-command-args
+      - make all
+      - make install
+      - make install-config
+      - make install-init
+
+   - name: Copy Nagios Script to target server
+     copy:
+      src: "{{ item }}"
+      dest: /usr/local/nagios/libexec/  
+     with_fileglob:
+      - /data/files/nagios/check_*
+
+   - command: chown nagios. /usr/local/nagios/libexec/check_ram 
+   - command: chown nagios. /usr/local/nagios/libexec/check_disk.sh 
+   - command: chown nagios. /usr/local/nagios/libexec/check_os
+
+   - command: chmod +x /usr/local/nagios/libexec/check_ram 
+   - command: chmod +x /usr/local/nagios/libexec/check_disk.sh 
+   - command: chmod +x /usr/local/nagios/libexec/check_os
+
+   - name: Configure nrpe.cfg file
+     replace:
+      path: /usr/local/nagios/etc/nrpe.cfg
+      regexp: 'allowed_hosts=127.0.0.1,::1'
+      replace: "allowed_hosts=127.0.0.1,192.168.100.11"
+
+   - name: 5666 port add to Services
+     action: lineinfile dest=/etc/services regexp="" insertafter=EOF line="nrpe   5666/tcp"
+   - service: name=nrpe state=restarted

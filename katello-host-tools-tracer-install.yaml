@@ -1,0 +1,23 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+   - name: Install katello-host-tools-tracer on RHEL-7
+     yum:
+       name: katello-host-tools-tracer
+       state: present
+       update_cache: true
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "7")
+
+   - name: Install katello-host-tools-tracer on RHEL-8 or 9
+     dnf:
+       name: katello-host-tools-tracer
+       state: present
+       update_cache: true
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] > "7")
+
+   - name: Sync with foreman
+     shell: /usr/sbin/katello-tracer-upload

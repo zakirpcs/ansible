@@ -1,0 +1,27 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: su
+  remote_user: admin
+
+  tasks:
+   - name: 6514 port replace with 514
+     #action: lineinfile dest=/etc/rsyslog.conf regexp="" insertafter=EOF line="*.* {{IP}}:{{PORT}}" backup=yes state=present
+     replace:
+      path: /etc/rsyslog.conf
+      regexp: "6514"
+      replace: "514"
+
+   - name: find change port
+     shell: cat /etc/rsyslog.conf |grep 514
+     register: command_output
+
+   - name: Print Output
+     debug:
+      msg: "{{ command_output.stdout_lines | join('\n') }}"
+
+   - name: restart rsyslog service
+     service:
+       name: rsyslog
+       state: restarted

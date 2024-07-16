@@ -1,0 +1,57 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  vars:
+    backup_dir: "/tmp"
+    backup_file: "var_cache_{{ ansible_date_time.date }}.tar.gz"
+    mount_point: "/var/cache/yum"
+
+  tasks:
+    - set_fact:
+        mount_names: "{{ ansible_mounts | map(attribute='mount') | list }}"
+
+    - name: Exit if /var/cache/yum is not mounted
+      fail:
+        msg: "/var/cache/yum is not a mount point."
+      when: mount_point not in mount_names
+
+    - name: Check if /var/cache/yum is mounted
+      stat:
+        path: /var/cache/yum
+      register: yum_mounted
+
+    - name: Unmount /var/cache/yum if it is mounted
+      mount:
+        state: unmounted
+        path: /var/cache/yum
+      when: yum_mounted.stat.exists
+
+    - name: Delete contents from /var/cache
+      command: rm -rf /var/cache/*
+
+    - name: Change mount point in /etc/fstab
+      replace:
+        path: /etc/fstab
+        regexp: '(\s+)/var/cache/yum(\s+.*)?$'
+        replace: '\1/var/cache\2'
+        backup: yes
+      when: yum_mounted.stat.exists
+
+    - name: Mount /var/cache
+      command: mount -a
+
+    - name: Extract backup tarball to /var/cache
+      unarchive:
+        src: "/tmp/{{ backup_file }}"
+        dest: "/var"
+        remote_src: yes
+      when: yum_mounted.stat.exists
+
+    - name: Delete the backup file from /tmp
+      file:
+        state: absent
+        path: "{{ backup_dir }}/{{ backup_file }}"
+      when: yum_mounted.stat.exists

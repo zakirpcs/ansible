@@ -1,0 +1,34 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: su
+  remote_user: admin
+
+  tasks:
+   - name: Get the Active Interface Name
+     shell: ip a | awk '/inet.*brd/{print $NF; exit}'
+     register: command_output
+   
+   - set_fact:
+      INT={{ command_output.stdout }}
+
+   - name: Change Subnet Mask
+     lineinfile:
+      path: /etc/sysconfig/network-scripts/ifcfg-{{INT}}
+      regexp: '^NETMASK=255.0.0.0'
+      line: 'NETMASK=255.255.255.0'
+
+   - name: Get current Subnet Mask
+     shell: route -n|grep "255.*" |awk '{print $3}'
+     register: command_output
+
+   - name: Print current Subnet Mask
+     debug:
+      msg: "{{ command_output.stdout_lines | join('\n') }}"
+      
+   - name: Restart Network Service
+     become: yes
+     service:
+      name: NetworkManager
+      state: restarted

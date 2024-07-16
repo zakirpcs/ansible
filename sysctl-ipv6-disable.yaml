@@ -1,0 +1,26 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: su
+  remote_user: admin
+
+  vars:
+   IP: 'net.ipv6.conf.all.disable_ipv6'
+   PORT: '1'
+
+  tasks:
+   - name: Disable IPv6 
+     action: lineinfile dest=/etc/sysctl.d/99-sysctl.conf regexp="" insertafter=EOF line="{{IP}}={{PORT}}" backup=yes state=present
+
+   - name: Reload kernel parameter
+     shell: sysctl -p
+
+   - name: Check current sysctl IPv6 parameter
+     shell: cat /etc/sysctl.d/99-sysctl.conf |grep ipv6
+     register: command_output
+
+   - name: Print Output
+     debug:
+      msg: "{{ command_output.stdout_lines | join('\n') }}"
+      #var: command_output.stdout_lines

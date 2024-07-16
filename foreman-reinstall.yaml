@@ -1,0 +1,60 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+   - name: check foreman client is installed or not
+     shell:
+      cmd: rpm -q katello-ca-consumer-foreman.itcbd.com-1.0-1.noarch
+     ignore_errors: yes       
+     register: foreman_check       
+
+   - name: Uninstall existing foreman client if exist
+     shell:
+      cmd: rpm -e katello-ca-consumer-foreman.itcbd.com-1.0-1.noarch
+     when: foreman_check.rc == 0
+     ignore_errors: yes       
+
+   - name: subscription-manager remove from foreman
+     command: subscription-manager remove --all
+     ignore_errors: yes       
+
+   - name: subscription-manager unregister from foreman
+     command: subscription-manager unregister
+     ignore_errors: yes
+
+   - name: subscription-manager clean from foreman
+     command: subscription-manager clean
+
+   - name: Check Host Entry
+     shell: grep -c "^10.0.14.73" /etc/hosts || true
+     register: host_check
+
+   - name: Add host entry for foreman
+     lineinfile:
+       dest: /etc/hosts
+       line: '10.0.14.73		foreman.itcbd.com	foreman'
+     when: host_check.stdout == "0"
+
+   - name: Copy Foreman certificate rpm to the target server
+     copy: src=/data/files/foreman/katello-ca-consumer-foreman.itcbd.com-1.0-1.noarch.rpm dest=/tmp/ force=no
+
+   - name: Install foreman certificate using rpm
+     shell: rpm -ivh katello-ca-consumer-foreman.itcbd.com-1.0-1.noarch.rpm --force
+     args:
+      chdir: /tmp
+
+   - name: RHEL-7 Register to foreman
+     shell: subscription-manager register --org="ITCL" --activationkey="RHEL-7-KEY" --force
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "7")
+
+   - name: RHEL-8 Register to foreman
+     shell: subscription-manager register --org="ITCL" --activationkey="RHEL-8-KEY" --force
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "8")
+
+   - name: RHEL-9 Register to foreman
+     shell: subscription-manager register --org="ITCL" --activationkey="RHEL-9-KEY" --force
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "9")

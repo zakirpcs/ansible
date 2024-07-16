@@ -1,0 +1,35 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+   - name: Copy latest wazuh agent file to target server
+     copy: src=/data/files/wazuh/wazuh-agent-4.3.10-1.x86_64.rpm dest=/home/sys-admin/ force=no  
+
+   - name: Remove old wazuh-agent version
+     yum:
+       name: wazuh-agent
+       state: absent
+       autoremove: true
+
+   - name: Reinstall wazuh-agent-4.3.10-1
+     shell: WAZUH_MANAGER="10.0.14.89" yum install wazuh-agent-4.3.10-1.x86_64.rpm -y
+     args:
+       chdir: /home/sys-admin
+
+   - name: Restart & Enable Wazuh Agent Service
+     systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes  
+      name: wazuh-agent
+
+   - name: print current version
+     shell: rpmquery wazuh-agent
+     register: command_output
+
+   - name: Print Output
+     debug:
+      msg: "{{ command_output.stdout_lines | join('\n') }}"

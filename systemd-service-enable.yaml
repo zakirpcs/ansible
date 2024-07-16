@@ -1,0 +1,29 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+#   - name: Restart & Enable Wazuh Agent Service
+#     systemd:
+#     state: restarted
+#     daemon_reload: yes
+#     enabled: yes  
+#     name: wazuh-agent
+
+   - name: Check Service is running or not
+     shell: systemctl status wazuh-agent |grep -w "Active:"
+     register: running_output
+
+   - name: Check Service is Enable or not
+     shell: systemctl status wazuh-agent|grep -w "Loaded:" |awk '{print $4}'
+     register: enable_output
+
+   - name: Check Service is running or not
+     debug:
+      msg: "{{ running_output.stdout_lines | join('\n') }}"
+
+   - name: Check Service is enable or not
+     debug:
+      msg: "{{ enable_output.stdout_lines | join('\n') }}"

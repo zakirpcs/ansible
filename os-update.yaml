@@ -1,0 +1,33 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+    - name: Check current kernel version
+      shell: uname -r
+      register: current_kernel_version
+
+    - name: Update packages
+      yum:
+        name: "*"
+        state: latest
+      register: result
+      notify:
+        - Reboot if kernel version updated
+
+    - name: Restart services
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      loop: "{{ result | json_query('results[*].item') }}"
+
+  handlers:
+    - name: Reboot if kernel version updated
+      reboot:
+        pre_reboot_delay: 5
+        post_reboot_delay: 30
+        reboot_timeout: 300
+      when: result.changed and result|changed_version("kernel", current_kernel_version.stdout)

@@ -1,0 +1,19 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: su
+  remote_user: admin
+
+  tasks:
+   - name: Check version less than polkit-0.115-13
+     register: result
+     shell: rpm -qa|grep polkit-0.*
+
+   - debug: 
+      msg: "{{result.stdout}}"
+
+   - name: Update polkit version to resolve CVE-2021-4034
+     yum:
+       name: polkit
+       state: latest

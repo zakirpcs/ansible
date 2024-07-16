@@ -1,0 +1,32 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  vars:
+    agent_ver: wazuh-agent-4.8.0-1.x86_64.rpm
+
+  tasks:
+   - name: Copy latest wazuh agent file to target server
+     copy: src=/data/files/wazuh/{{ agent_ver }} dest=/home/sys-admin/ force=no  
+
+   - name: Update wazuh-agent version
+     shell: rpm -Uvh {{ agent_ver }}
+     args:
+       chdir: /home/sys-admin
+
+   - name: Restart & Enable Wazuh Agent Service
+     systemd:
+      state: restarted
+      daemon_reload: yes
+      enabled: yes  
+      name: wazuh-agent
+
+   - name: print current version
+     shell: rpmquery wazuh-agent
+     register: command_output
+
+   - name: Print Output
+     debug:
+      msg: "{{ command_output.stdout_lines | join('\n') }}"

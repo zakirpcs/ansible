@@ -1,0 +1,15 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+    - name: Remove Unnecessary Packages
+      shell: yum remove cups firefox podman buildah qemu-kvm* cockpit* container* git-* iwl*-firmware-* -y
+      register: packages
+
+    - name: Print Output
+      debug:
+        msg: "{{ packages.stdout_lines | join('\n') }}"

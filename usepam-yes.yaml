@@ -1,0 +1,29 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+   - name: Set UsePAM to yes
+     lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^(#)?UsePAM'
+      line: 'UsePAM yes'
+     notify: Restart sshd
+
+   - name: Get current UsePAM value
+     shell: grep ^UsePAM /etc/ssh/sshd_config
+     register: command_output
+
+   - name: Print current UsePAM value
+     debug:
+      msg: "{{ command_output.stdout_lines }}"
+
+  handlers:
+   - name: Restart sshd
+     become: yes
+     service: 
+       name: sshd 
+       state: restarted

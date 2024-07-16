@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+  #gather_facts: false
+
+  tasks:
+   - name: OS Version Check
+#     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] <= "9")
+     debug: msg="{{ ansible_distribution }} {{ ansible_distribution_version}}"

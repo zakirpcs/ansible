@@ -1,0 +1,26 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: su
+  remote_user: admin
+
+  tasks:
+   - name: Disable IPv6 in Postfix
+     lineinfile:
+      path: /etc/postfix/main.cf
+      regexp: '^inet_interfaces'
+      line: 'inet_interfaces = all'
+
+   - name: restart postfix service
+     service:
+      name: postfix
+      state: restarted
+
+   - name: Check current postfix IPv6 parameter 
+     shell: cat /etc/postfix/main.cf |grep -v "#" |grep inet_interfaces
+     register: command_output
+
+   - name: Print Output
+     debug:
+      msg: "{{ command_output.stdout_lines | join('\n') }}"
