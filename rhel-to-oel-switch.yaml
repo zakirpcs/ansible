@@ -1,0 +1,53 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  vars:
+    rhel_release:
+    - redhat-release 
+    - redhat-release-eula
+
+  tasks:
+   - name: Uninstall unnecessary Packages
+     shell: rpm -e --nodeps {{ rhel_release }} 
+
+   - name: Install Oracle Linux Release for OEL 7
+     shell: rpm -i https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/getPackage/oraclelinux-release-el7-1.0-17.el7.x86_64.rpm
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "7")
+
+   - name: Install Oracle Linux Release for OEL 8
+     shell: rpm -i https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64/getPackage/oraclelinux-release-el8-1.0-38.el8.x86_64.rpm
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "8")
+
+   - name: Install Oracle Linux Release for OEL 9
+     shell: rpm -i https://yum.oracle.com/repo/OracleLinux/OL9/baseos/latest/x86_64/getPackage/oraclelinux-release-el9-1.0-15.el9.x86_64.rpm
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "9")
+
+   - name: Install oraclelinux-release package
+     yum:
+      name: oraclelinux-release 
+      state: latest
+
+   - name: Switch OS from RHEL to OEL
+     shell: yum -y distro-sync
+
+   - name: Remove Unnecessary Pacakages
+     yum:
+      name: 
+       - subscription-manager 
+       - insights-client
+      state: absent
+
+   - name: Rebuild the initial RAM filesystem
+     shell: dracut -f
+
+   - name: Reboot Machine after OS Version Switch
+     reboot:
+      pre_reboot_delay: 5
+      post_reboot_delay: 30
+      reboot_timeout: 300
+      msg: "Reboot initiated by Ansible after OS Version Switch"
+      test_command: w
+       

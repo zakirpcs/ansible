@@ -1,0 +1,44 @@
+- hosts: all
+  become: yes
+  become_user: root
+  become_method: sudo
+  remote_user: sys-admin
+
+  tasks:
+   - name: Create required file for rhel-7
+     copy:
+      dest: /etc/modprobe.d/disable-filesystems.conf
+      content: |
+        install cramfs /bin/true
+        install squashfs /bin/true
+        install udf /bin/true
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "7")
+
+   - name: Create required file for rhel-8
+     copy:
+      dest: /etc/modprobe.d/disable-filesystems.conf
+      content: |
+        install cramfs /bin/false
+        install squashfs /bin/false
+        install udf /bin/false
+        blacklist cramfs
+        blacklist squashfs
+        blacklist udf
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "8")
+
+   - name: Create required file for rhel-9
+     copy:
+      dest: /etc/modprobe.d/blacklist.conf
+      content: |
+        install cramfs /bin/false
+        install squashfs /bin/false
+        install udf /bin/false
+        blacklist cramfs
+        blacklist squashfs
+        blacklist udf
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] == "9")
+
+   - name: Remove cramfs squashfs udf module from kernel
+     shell: modprobe -r cramfs; modprobe -r squashfs; modprobe -r udf
+     ignore_errors: true
+     when: (ansible_facts['distribution'] == "RedHat" and ansible_facts['distribution_major_version'] <= "9")
