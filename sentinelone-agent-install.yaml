@@ -15,7 +15,7 @@
       chdir: /home/admin
 
    - name: Assign token to SentinelOne Agent
-     command: /opt/sentinelone/bin/sentinelctl management token set eyJ1cmwiOiAiaHR0cHM6Ly91c2VhMS0zMDAtbmZyLnNlbnRpbmVsb25lLm5ldCIsICJzaXRlX2tleSI6ICI5M2VmMjA4ZmNkNWRmZWIxIn0=
+     command: /opt/sentinelone/bin/sentinelctl management token set NKJNIJSNJKJJIWNKJNKJWJNSKNKJSNW
 
    - name: Start SentinelOne Agent
      command: /opt/sentinelone/bin/sentinelctl control start
